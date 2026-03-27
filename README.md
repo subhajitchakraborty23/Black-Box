@@ -1,14 +1,12 @@
-<<<<<<< HEAD
+
 # 🚨 Black-Box — AI-Powered Accident Reconstruction System
-=======
-# Hlo Welcome to your Lovable project
->>>>>>> 0d6c0d5ad8184c9bbf06ef0e8950ff07755fd8f4
+
 
 > An IoT-based Event Data Recorder (EDR) that automatically detects vehicle accidents, reconstructs them using AI, and sends emergency alerts — powered by ESP32, MPU6050, Neo-6M GPS, FastAPI, MongoDB, and Google Gemini AI.
 
 ---
 
-## 📌 Table of Contents
+📌 Table of Contents
 
 - [Overview](#overview)
 - [Hardware Components](#hardware-components)
@@ -23,7 +21,7 @@
 
 ---
 
-## 🧠 Overview
+ 🧠 Overview
 
 **Black-Box** is an intelligent accident detection and reconstruction system inspired by aircraft flight recorders. It is mounted on a two-wheeler and continuously records GPS and IMU sensor data. When a crash is detected, it:
 
@@ -35,7 +33,7 @@
 
 ---
 
-## 🔧 Hardware Components
+ 🔧 Hardware Components
 
 | Component | Model | Purpose |
 |-----------|-------|---------|
@@ -53,7 +51,7 @@ All three must be met within a **200ms window**:
 ✔ Jerk               ≥ 30 g/s
 ```
 
-### Sensor Specifications
+Sensor Specifications
 
 **MPU6050 (IMU):**
 - Sampling Rate: 100Hz (one reading every 10ms)
@@ -72,7 +70,7 @@ All three must be met within a **200ms window**:
 
 ## 🔌 Hardware Wiring
 
-### ESP32 → MPU6050
+ ESP32 → MPU6050
 
 ```
 ESP32           MPU6050
@@ -83,7 +81,7 @@ GPIO 21  →     SDA
 GPIO 22  →     SCL
 ```
 
-### ESP32 → Neo-6M GPS
+ESP32 → Neo-6M GPS
 
 ```
 ESP32           Neo-6M
@@ -96,7 +94,7 @@ GPIO 17  →     RX (GPS)
 
 ---
 
-## 💻 Software Stack
+💻 Software Stack
 
 | Layer | Technology | Purpose |
 |-------|-----------|---------|
@@ -112,7 +110,7 @@ GPIO 17  →     RX (GPS)
 
 ---
 
-## 🏗️ System Architecture
+ 🏗️ System Architecture
 
 ```
 ┌─────────────────────────────────────────────────────┐
@@ -158,7 +156,7 @@ GPIO 17  →     RX (GPS)
 
 ---
 
-## 📁 Project Structure
+ 📁 Project Structure
 
 ```
 Black-Box/
@@ -178,14 +176,14 @@ Black-Box/
 
 ---
 
-## ⚙️ Installation
+ ⚙️ Installation
 
-### Prerequisites
+Prerequisites
 - Python 3.10+
 - MongoDB running on `localhost:27017`
 - Google Gemini API key ([Get one here](https://aistudio.google.com))
 
-### Steps
+ Steps
 
 **1. Clone the repository:**
 ```bash
@@ -294,7 +292,7 @@ DELETE /session/session_001
 
 ---
 
-## 🗺️ Future Roadmap
+ 🗺️ Future Roadmap
 
 - [ ] Add IMU data integration (MPU6050 acceleration + gyroscope)
 - [ ] Real-time dashboard (Frontend)
@@ -306,13 +304,13 @@ DELETE /session/session_001
 
 ---
 
-## 👨‍💻 Author
+👨‍💻 Author
 
 **Subhajit Chakraborty**
 - GitHub: [@subhajitchakraborty23](https://github.com/subhajitchakraborty23)
 
 ---
 
-## 📄 License
+📄 License
 
 This project is licensed under the MIT License.
