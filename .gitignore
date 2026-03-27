@@ -27,3 +27,5 @@ venv/
 .env
 __pycache__/
 *.pyc
+requirements.txt
+    

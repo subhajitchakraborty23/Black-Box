@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 fastapi
 uvicorn
 motor
@@ -6,3 +7,9 @@ httpx
 google-generativeai
 python-dotenv
 pydantic[email]
+=======
+fastapi>=0.111.0
+uvicorn[standard]>=0.29.0
+httpx>=0.27.0
+pydantic>=2.0.0
+>>>>>>> 0458688f579fc0a7b614f4052f3ac69ac2803a69
