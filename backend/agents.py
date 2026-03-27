@@ -1,4 +1,4 @@
-import google.generativeai as genai
+from google import genai
 import os
 from dotenv import load_dotenv
 from tools import (
@@ -10,9 +10,10 @@ from tools import (
 )
 
 load_dotenv()
-genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
-model = genai.GenerativeModel("gemini-2.5-flash")
+# genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+# model = genai.GenerativeModel("gemini-2.5-flash")
 
+client = genai.Client()
 
 def format_gps_data(readings: list) -> str:
     formatted = ""
@@ -152,7 +153,10 @@ async def run_accident_agent(readings: list, session_id: str) -> dict:
         severity_info=severity_info,
     )
 
-    response     = model.generate_content(prompt)
+    response     = client.models.generate_content(
+        model="gemini-2.5-flash",
+        contents=[{"role": "user", "text": prompt}],
+    )
     report_text  = response.text
 
     print("✅ Agent completed reconstruction!")

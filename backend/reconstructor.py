@@ -1,14 +1,14 @@
-import google.generativeai as genai
+from google import genai
 import os
 from dotenv import load_dotenv
 from datetime import datetime
 
 load_dotenv()
 
+# genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+# model = genai.GenerativeModel("gemini-2.5-flash")
 
-genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
-model = genai.GenerativeModel("gemini-2.5-flash")
-
+client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
 
 def get_blackbox_data():
     return [
@@ -115,15 +115,15 @@ def build_prompt(gps_data_str,                    # Fixed Bug 2
                  imu_data_str="No IMU data available",
                  gps_coordinates_if_available="Not available"):
     return f"""
-You are a certified Accident Reconstruction Analyst and Forensic Engineer 
-with expertise in vehicle dynamics, biomechanics, road physics, and 
+You are a certified Accident Reconstruction Analyst and Forensic Engineer
+with expertise in vehicle dynamics, biomechanics, road physics, and
 embedded sensor data interpretation.
 
-You have been provided with raw blackbox data captured by an IoT-based 
-Event Data Recorder (EDR) mounted on a two-wheeler. The data was recorded 
+You have been provided with raw blackbox data captured by an IoT-based
+Event Data Recorder (EDR) mounted on a two-wheeler. The data was recorded
 continuously at 100Hz and covers the pre-crash, crash, and post-crash phases.
 
-Your task is to perform a thorough, evidence-based accident reconstruction 
+Your task is to perform a thorough, evidence-based accident reconstruction
 using ONLY the data provided. Do not make assumptions beyond what the data supports.
 
 ════════════════════════════════════════════
@@ -163,7 +163,7 @@ Crash Detection Criteria (ALL must be met within 200ms window):
      ACCIDENT RECONSTRUCTION REPORT
 ════════════════════════════════════════════
 
-Using the sensor data above, generate a structured forensic report 
+Using the sensor data above, generate a structured forensic report
 with the following sections:
 
 ──────────────────────────────────────────
@@ -171,18 +171,18 @@ SECTION 1 : PRE-ACCIDENT ANALYSIS
 ──────────────────────────────────────────
 Analyze the vehicle's state BEFORE the crash event:
 
-  • Overall motion trend        : Was the vehicle calm, accelerating, 
+  • Overall motion trend        : Was the vehicle calm, accelerating,
                                   braking, or maneuvering?
-  • Most active axis            : Which accelerometer axis showed the 
-                                  highest activity? What does this indicate 
+  • Most active axis            : Which accelerometer axis showed the
+                                  highest activity? What does this indicate
                                   about the vehicle's direction of travel?
-  • Pre-impact anomalies        : Was there unusual jerk, vibration, or 
+  • Pre-impact anomalies        : Was there unusual jerk, vibration, or
                                   sudden directional change before impact?
-  • Driver behavior assessment  : Based on throttle/braking patterns 
-                                  visible in the data, describe the 
-                                  driver's behavior (alert, distracted, 
+  • Driver behavior assessment  : Based on throttle/braking patterns
+                                  visible in the data, describe the
+                                  driver's behavior (alert, distracted,
                                   aggressive, panic braking, etc.)
-  • Speed trend                 : Was the vehicle speeding up or slowing 
+  • Speed trend                 : Was the vehicle speeding up or slowing
                                   down before impact?
 
 ──────────────────────────────────────────
@@ -195,7 +195,7 @@ Pinpoint the exact moment of impact:
   • Peak jerk                   : Maximum rate of acceleration change (g/s)
   • Delta-V                     : Total velocity change during impact (m/s)
   • Crash GPS coordinates       : Latitude & Longitude (if available)
-  • Crash confirmation          : Does the data meet ALL 3 crash detection 
+  • Crash confirmation          : Does the data meet ALL 3 crash detection
                                   criteria? State clearly YES or NO with values.
 
 ──────────────────────────────────────────
@@ -203,16 +203,16 @@ SECTION 3 : PROBABLE CAUSE OF ACCIDENT
 ──────────────────────────────────────────
 Determine the most likely cause:
 
-  • Primary cause               : What does the acceleration signature 
+  • Primary cause               : What does the acceleration signature
                                   suggest as the main cause?
-                                  (e.g., frontal collision, side impact, 
+                                  (e.g., frontal collision, side impact,
                                    rollover, hard braking, skid, pothole)
-  • Impact direction            : Based on which axis spiked most — 
-                                  was the impact FRONTAL, LATERAL, 
+  • Impact direction            : Based on which axis spiked most —
+                                  was the impact FRONTAL, LATERAL,
                                   REAR, or ROLLOVER?
-  • Overspeeding assessment     : Was the vehicle exceeding safe speed 
+  • Overspeeding assessment     : Was the vehicle exceeding safe speed
                                   limits based on GPS speed data?
-  • Road condition indicators   : Any signs of skidding or instability 
+  • Road condition indicators   : Any signs of skidding or instability
                                   before impact?
   • Contributing factors        : Any secondary factors visible in data
 
@@ -221,15 +221,15 @@ SECTION 4 : POST-ACCIDENT ANALYSIS
 ──────────────────────────────────────────
 Analyze the vehicle's state AFTER the crash:
 
-  • Post-impact movement        : Did the vehicle continue moving 
+  • Post-impact movement        : Did the vehicle continue moving
                                   after impact? In which direction?
-  • Stabilization time          : How long did it take for sensor 
+  • Stabilization time          : How long did it take for sensor
                                   readings to return to near-rest values?
-  • Final resting orientation   : Based on gravity axis shift in 
-                                  accelerometer data, is the vehicle 
+  • Final resting orientation   : Based on gravity axis shift in
+                                  accelerometer data, is the vehicle
                                   upright, tilted, or overturned?
-  • GPS satellite loss          : If satellites dropped, explain why 
-                                  (antenna blockage due to vehicle 
+  • GPS satellite loss          : If satellites dropped, explain why
+                                  (antenna blockage due to vehicle
                                   orientation change)
 
 ──────────────────────────────────────────
@@ -238,13 +238,13 @@ SECTION 5 : ACCIDENT SEVERITY ASSESSMENT
 Rate the severity and potential injuries:
 
   • Severity rating             : Minor / Moderate / Severe / Critical
-  • Justification               : Based on peak g-force, delta-V, 
+  • Justification               : Based on peak g-force, delta-V,
                                   and jerk rate
-  • Estimated injury risk       : Based on the deceleration profile, 
+  • Estimated injury risk       : Based on the deceleration profile,
                                   what injuries are likely?
-                                  (e.g., whiplash, head trauma, 
+                                  (e.g., whiplash, head trauma,
                                    fractures, fatal risk)
-  • Emergency response needed   : YES or NO — and what level 
+  • Emergency response needed   : YES or NO — and what level
                                   (ambulance, fire brigade, police)
 
 ──────────────────────────────────────────
@@ -252,9 +252,9 @@ SECTION 6 : RECONSTRUCTION SUMMARY
 ──────────────────────────────────────────
 Provide a complete narrative of the accident:
 
-  • Narrative paragraph         : Write a clear, concise paragraph 
-                                  describing EXACTLY what happened — 
-                                  from the vehicle's normal operation 
+  • Narrative paragraph         : Write a clear, concise paragraph
+                                  describing EXACTLY what happened —
+                                  from the vehicle's normal operation
                                   to the final resting state.
   • Event timeline              : List key events with timestamps:
       [T-Xs] → Vehicle state before crash
@@ -266,7 +266,7 @@ Provide a complete narrative of the accident:
 IMPORTANT GUIDELINES
 ──────────────────────────────────────────
   ✔ Base ALL conclusions strictly on provided sensor data
-  ✔ Clearly state "CANNOT BE DETERMINED FROM AVAILABLE DATA" 
+  ✔ Clearly state "CANNOT BE DETERMINED FROM AVAILABLE DATA"
     if any conclusion is not supported by data
   ✔ Use precise numerical values from the data in your analysis
   ✔ Distinguish between CONFIRMED findings and PROBABLE findings
@@ -301,10 +301,13 @@ def reconstruct_accident():
         gps_coordinates_if_available=crash_gps
     )
 
-    
+
     print("\n🤖 Sending data to AI for reconstruction...")
     print("─" * 60)
-    response = model.generate_content(prompt)
+    response = client.models.generate_content(
+        model="gemini-2.5-flash",
+        contents=[{"role": "user", "input": prompt}]
+    )
 
     # Step 6 - Print Report
     print("\n" + "=" * 60)
