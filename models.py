@@ -36,7 +36,10 @@ class TelemetryEvent(Base):
     lat = Column(Float, nullable=False)
     lon = Column(Float, nullable=False)
     speed = Column(Float, nullable=False) 
-    accel = Column(Float, nullable=False)   
+    accel = Column(Float, nullable=False)
+    ax = Column(Float, default=0.0)         
+    ay = Column(Float, default=0.0)         
+    az = Column(Float, default=0.0)  
     timestamp = Column(DateTime, nullable=False)
     crash_flagged = Column(Boolean, default=False)
 

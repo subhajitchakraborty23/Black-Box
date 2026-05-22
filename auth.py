@@ -32,8 +32,12 @@ async def get_current_user(
     except JWTError as e:
         raise HTTPException(401, f"Invalid token: {e}")
 
-    result = await db.execute(select(User).where(User.clerk_id == clerk_id))
-    user = result.scalar_one_or_none()
-    if not user:
-        raise HTTPException(404, "User not synced yet — webhook may be pending")
-    return user
+    try:
+        result = await db.execute(select(User).where(User.clerk_id == clerk_id))
+        user = result.scalar_one_or_none()
+        if not user:
+            raise HTTPException(404, "User not synced yet — webhook may be pending")
+        return user
+    except Exception as e:
+        print(f"Database error in get_current_user: {e}")
+        raise HTTPException(500, "Database connection error. Please try again.")

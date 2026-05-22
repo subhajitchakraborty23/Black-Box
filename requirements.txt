@@ -1,7 +1,5 @@
 fastapi
 uvicorn
-motor
-pymongo
 httpx
 google-genai
 python-dotenv
@@ -13,5 +11,9 @@ psycopg2-binary
 asyncpg
 langchain
 langchain-google-genai
+langgraph
 python-multipart
 python-jose[cryptography]
+twilio
+langchain-huggingface
+huggingface_hub
