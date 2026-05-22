@@ -1,8 +1,0 @@
-fastapi
-uvicorn
-motor
-pymongo
-httpx
-google-genai
-python-dotenv
-pydantic

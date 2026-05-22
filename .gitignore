@@ -26,6 +26,4 @@ dist-ssr
 venv/
 .env
 __pycache__/
-*.pyc
-requirements.txt
-    
+*.pyc    
