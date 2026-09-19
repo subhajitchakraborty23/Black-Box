@@ -28,6 +28,9 @@ class AgentState(TypedDict, total=False):
     crash_speed: float
     max_speed: float
     peak_accel: float
+    peak_accel_g: float
+    delta_v_ms: float
+    jerk_g_per_s: float
     peak_ax: float
     peak_ay: float
     peak_az: float
@@ -64,13 +67,18 @@ def analyze_telemetry(state: AgentState) -> AgentState:
 
     crash_speed = speeds[crash_idx - 1] if crash_idx > 0 else speeds[0]
 
+    measured_peak_accel_g = state.get("peak_accel_g")
     return {
         **state,
         "lat":        events[crash_idx]["lat"],
         "lon":        events[crash_idx]["lon"],
         "crash_speed": crash_speed,
         "max_speed":  max(speeds),
-        "peak_accel": round(max(accel_mags), 2),
+        "peak_accel": (
+            measured_peak_accel_g
+            if measured_peak_accel_g is not None
+            else round(max(accel_mags), 2)
+        ),
         "crash_idx":  crash_idx,
     }
 
@@ -79,7 +87,8 @@ def calculate_delta_v(state: AgentState) -> AgentState:
     events = state.get("events", [])
     if len(events) < 2:
         return {**state, "delta_vx": 0.0, "delta_vy": 0.0, "delta_vz": 0.0,
-                "delta_v_total": 0.0, "peak_ax": 0.0, "peak_ay": 0.0, "peak_az": 0.0}
+                "delta_v_total": state.get("delta_v_ms", 0.0),
+                "peak_ax": 0.0, "peak_ay": 0.0, "peak_az": 0.0}
 
     crash_idx = state.get("crash_idx", 0)
     window = 10
@@ -97,10 +106,11 @@ def calculate_delta_v(state: AgentState) -> AgentState:
         peak_ay = max(peak_ay, abs(e["ay"]))
         peak_az = max(peak_az, abs(e["az"]))
 
+    calculated_delta_v_total = round(math.sqrt(dvx**2 + dvy**2 + dvz**2), 2)
     return {
         **state,
         "delta_vx": round(dvx, 2), "delta_vy": round(dvy, 2), "delta_vz": round(dvz, 2),
-        "delta_v_total": round(math.sqrt(dvx**2 + dvy**2 + dvz**2), 2),
+        "delta_v_total": state.get("delta_v_ms", calculated_delta_v_total),
         "peak_ax": round(peak_ax, 2), "peak_ay": round(peak_ay, 2), "peak_az": round(peak_az, 2),
     }
 
@@ -166,7 +176,19 @@ async def get_speed_limit(state: AgentState) -> AgentState:
 # ── Node 7 ────────────────────────────────────────────────
 def determine_severity(state: AgentState) -> AgentState:
     dv = abs(state.get("delta_v_total", 0.0))
-    peak_accel = math.sqrt(state.get("peak_ax",0)**2 + state.get("peak_ay",0)**2 + state.get("peak_az",0)**2)
+    sampled_peak_accel = math.sqrt(
+        state.get("peak_ax", 0)**2
+        + state.get("peak_ay", 0)**2
+        + state.get("peak_az", 0)**2
+    )
+    # Device values are in g; sampled axes are treated as m/s² by the existing
+    # thresholds, so convert before comparing them.
+    device_peak_accel_g = state.get("peak_accel_g")
+    peak_accel = (
+        device_peak_accel_g * 9.80665
+        if device_peak_accel_g is not None
+        else sampled_peak_accel
+    )
     impact_angle = abs(state.get("impact_angle", 0.0))
     collision_type = state.get("collision_type", "UNKNOWN")
 
@@ -206,6 +228,8 @@ DATA:
 - Speed at impact: {state.get('crash_speed', 0)} km/h
 - Delta Vx / Vy / Vz: {state.get('delta_vx',0)} / {state.get('delta_vy',0)} / {state.get('delta_vz',0)} m/s
 - Total Delta-V: {state.get('delta_v_total', 0)} m/s
+- Device trigger peak acceleration: {state.get('peak_accel_g', 'Unknown')} g
+- Device trigger jerk: {state.get('jerk_g_per_s', 'Unknown')} g/s
 - Peak accel X/Y/Z: {state.get('peak_ax',0)} / {state.get('peak_ay',0)} / {state.get('peak_az',0)}
 - Collision type: {state.get('collision_type', 'UNKNOWN')}
 - Impact angle: {state.get('impact_angle', 0)}°

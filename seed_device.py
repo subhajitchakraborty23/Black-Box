@@ -16,7 +16,7 @@ async def seed():
             return
 
         user = users[0]
-        api_key = "demo-api-key-2025"
+        api_key = uuid.uuid4().hex
         key_hash = hashlib.sha256(api_key.encode()).hexdigest()
 
         device = Device(

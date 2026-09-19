@@ -7,8 +7,9 @@ from uuid import UUID
 import json
 
 from db import get_db, session_local
+from auth import get_current_user
 from auth.device import get_current_device
-from models import Device, CrashReport, CrashSample
+from models import Device, User, CrashReport, CrashSample
 from agent.graph import blackbox_graph
 
 router = APIRouter(prefix="/crash", tags=["crash"])
@@ -38,7 +39,38 @@ class CrashReportOut(BaseModel):
     triggered_at: str
     created_at: datetime
 
-async def _run_reconstruction(report_id: UUID):
+
+class CrashReportRead(BaseModel):
+    id: UUID
+    device_id: UUID
+    status: str
+    triggered_at: datetime
+    created_at: datetime
+    severity: str | None
+    summary: str | None
+    location_lat: float | None
+    location_lon: float | None
+
+
+def _serialize_report(report: CrashReport) -> CrashReportRead:
+    return CrashReportRead(
+        id=report.id,
+        device_id=report.device_id,
+        status=report.status,
+        triggered_at=report.triggered_at,
+        created_at=report.created_at,
+        severity=report.severity,
+        summary=report.summary,
+        location_lat=report.location_lat,
+        location_lon=report.location_lon,
+    )
+
+async def _run_reconstruction(
+    report_id: UUID,
+    peak_accel_g: float,
+    delta_v_ms: float,
+    jerk_g_per_s: float,
+):
     async with session_local() as db:
         try:
             result = await db.execute(
@@ -67,16 +99,12 @@ async def _run_reconstruction(report_id: UUID):
             final_state = await blackbox_graph.ainvoke({
                 "session_id": str(report_id),
                 "events": events_data,
-                "lat": samples[-1].lat if samples else 0.0,
-                "lon": samples[-1].lon if samples else 0.0,
-                "crash_speed": 0.0, "max_speed": 0.0, "peak_accel": 0.0,
-                "peak_ax": 0.0, "peak_ay": 0.0, "peak_az": 0.0,
-                "delta_vx": 0.0, "delta_vy": 0.0, "delta_vz": 0.0,
-                "delta_v_total": 0.0,
-                "collision_type": "UNKNOWN", "impact_angle": 0.0,
-                "crash_idx": 0,
-                "location_name": "", "weather": "", "speed_limit": "",
-                "severity": "MINOR", "severity_score": 0, "report": {}
+                # These are the ESP32's trigger-time measurements. Preserve them
+                # for reconstruction instead of deriving replacements from the
+                # sampled window.
+                "peak_accel_g": peak_accel_g,
+                "delta_v_ms": delta_v_ms,
+                "jerk_g_per_s": jerk_g_per_s,
             })
 
             report_result = await db.execute(
@@ -86,9 +114,15 @@ async def _run_reconstruction(report_id: UUID):
             if report:
                 report.severity = final_state.get("severity", "UNKNOWN")
                 report.summary = final_state.get("report", {}).get("summary", "")
+                if not report.summary.strip():
+                    print(
+                        f"[RECON] Warning: reconstruction for report {report_id} "
+                        "returned an empty summary"
+                    )
                 report.location_lat = samples[-1].lat if samples else None
                 report.location_lon = samples[-1].lon if samples else None
-                report.status = "completed"
+                if report.status != "false_alarm":
+                    report.status = "completed"
                 await db.commit()
                 print(f"[RECON] Report {report_id} updated to {report.status}")
 
@@ -136,7 +170,13 @@ async def create_crash_report(
         db.add(sample)
     await db.commit()
 
-    background_tasks.add_task(_run_reconstruction, crash_report.id)
+    background_tasks.add_task(
+        _run_reconstruction,
+        crash_report.id,
+        payload.peak_accel_g,
+        payload.delta_v_ms,
+        payload.jerk_g_per_s,
+    )
 
     return CrashReportOut(
         id=crash_report.id,
@@ -144,3 +184,56 @@ async def create_crash_report(
         triggered_at=payload.triggered_at,
         created_at=crash_report.created_at
     )
+
+
+@router.get("/reports", response_model=list[CrashReportRead])
+async def list_crash_reports(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(CrashReport)
+        .where(CrashReport.user_id == user.id)
+        .order_by(CrashReport.triggered_at.desc())
+    )
+    return [_serialize_report(report) for report in result.scalars().all()]
+
+
+@router.get("/reports/{report_id}", response_model=CrashReportRead)
+async def get_crash_report(
+    report_id: UUID,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(CrashReport).where(
+            CrashReport.id == report_id,
+            CrashReport.user_id == user.id,
+        )
+    )
+    report = result.scalar_one_or_none()
+    if report is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Crash report not found")
+    return _serialize_report(report)
+
+
+@router.post("/reports/{report_id}/false-alarm", response_model=CrashReportRead)
+async def mark_false_alarm(
+    report_id: UUID,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(CrashReport).where(
+            CrashReport.id == report_id,
+            CrashReport.user_id == user.id,
+        )
+    )
+    report = result.scalar_one_or_none()
+    if report is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Crash report not found")
+
+    report.status = "false_alarm"
+    await db.commit()
+    await db.refresh(report)
+    return _serialize_report(report)

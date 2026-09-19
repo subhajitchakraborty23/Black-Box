@@ -3,7 +3,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from db import init_db
 import models
 import webhooks
-from routers.telemetry import router as telemetry_router
 from routers.crash import router as crash_router
 
 app = FastAPI()
@@ -17,7 +16,6 @@ app.add_middleware(
 )
 
 app.include_router(webhooks.router, prefix="/webhooks")
-app.include_router(telemetry_router)
 app.include_router(crash_router)
 
 @app.on_event("startup")
