@@ -14,6 +14,7 @@ class User(Base):
     email = Column(String, unique=True, index=True)
     name = Column(String)
     avatar_url = Column(String)
+    push_token = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class Device(Base):

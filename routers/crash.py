@@ -5,11 +5,13 @@ from pydantic import BaseModel
 from datetime import datetime
 from uuid import UUID
 import json
+import os
+import httpx
 
 from db import get_db, session_local
 from auth import get_current_user
 from auth.device import get_current_device
-from models import Device, User, CrashReport, CrashSample
+from models import Device, User, CrashReport, CrashSample, AlertLog
 from agent.graph import blackbox_graph
 
 router = APIRouter(prefix="/crash", tags=["crash"])
@@ -64,6 +66,62 @@ def _serialize_report(report: CrashReport) -> CrashReportRead:
         location_lat=report.location_lat,
         location_lon=report.location_lon,
     )
+
+
+async def _send_push_alert(
+    db: AsyncSession,
+    report: CrashReport,
+    user: User,
+    final_state: dict,
+) -> None:
+    """Send the reconstructed crash alert to the user's registered push token."""
+    push_token = (user.push_token or "").strip()
+    if not push_token:
+        print(f"[ALERT] No push token for user {user.id}; skipping report {report.id}")
+        db.add(AlertLog(
+            crash_report_id=report.id,
+            channel="push",
+            recipient="unregistered",
+            status="skipped",
+        ))
+        await db.commit()
+        return
+
+    report_data = final_state.get("report") or {}
+    message = {
+        "to": push_token,
+        "title": "Crash detected",
+        "body": report_data.get("summary") or "A crash report has been reconstructed.",
+        "data": {
+            "report_id": str(report.id),
+            "severity": report.severity or "UNKNOWN",
+            "latitude": report.location_lat,
+            "longitude": report.location_lon,
+        },
+    }
+    endpoint = os.getenv("PUSH_SERVICE_URL", "https://exp.host/--/api/v2/push/send")
+    status_value = "failed"
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            response = await client.post(endpoint, json=message)
+            response.raise_for_status()
+            provider_result = response.json()
+            provider_data = provider_result.get("data", {})
+            if provider_data.get("status") == "error":
+                raise RuntimeError(provider_data.get("message", "push provider rejected message"))
+        status_value = "sent"
+        print(f"[ALERT] Push sent for report {report.id}")
+    except Exception as exc:
+        print(f"[ALERT] Push failed for report {report.id}: {type(exc).__name__}: {exc}")
+
+    db.add(AlertLog(
+        crash_report_id=report.id,
+        channel="push",
+        recipient=push_token,
+        status=status_value,
+        sent_at=datetime.utcnow() if status_value == "sent" else None,
+    ))
+    await db.commit()
 
 async def _run_reconstruction(
     report_id: UUID,
@@ -125,6 +183,16 @@ async def _run_reconstruction(
                     report.status = "completed"
                 await db.commit()
                 print(f"[RECON] Report {report_id} updated to {report.status}")
+
+                if report.status == "completed":
+                    user_result = await db.execute(
+                        select(User).where(User.id == report.user_id)
+                    )
+                    user = user_result.scalar_one_or_none()
+                    if user:
+                        await _send_push_alert(db, report, user, final_state)
+                    else:
+                        print(f"[ALERT] User {report.user_id} not found for report {report_id}")
 
         except Exception as e:
             print(f"[RECON] Error: {e}")

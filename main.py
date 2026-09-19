@@ -4,6 +4,7 @@ from db import init_db
 import models
 import webhooks
 from routers.crash import router as crash_router
+from routers.users import router as users_router
 
 app = FastAPI()
 
@@ -17,6 +18,7 @@ app.add_middleware(
 
 app.include_router(webhooks.router, prefix="/webhooks")
 app.include_router(crash_router)
+app.include_router(users_router)
 
 @app.on_event("startup")
 async def startup():

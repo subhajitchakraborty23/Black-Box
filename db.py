@@ -1,3 +1,4 @@
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.pool import NullPool
@@ -51,6 +52,11 @@ async def init_db():
     """Create all database tables on startup"""
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        # create_all does not add fields to existing tables. Keep this small,
+        # idempotent compatibility migration until a migration framework is added.
+        await conn.execute(
+            text("ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS push_token VARCHAR")
+        )
 
 async def get_db():
   async with session_local() as session:
