@@ -5,20 +5,19 @@ import httpx
 import re
 
 from typing import TypedDict
+from dotenv import load_dotenv
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.graph import StateGraph, END
-from langchain_huggingface import ChatHuggingFace, HuggingFaceEndpoint
 
 # ── LLM ───────────────────────────────────────────────────
-_endpoint = HuggingFaceEndpoint(
-    repo_id="moonshotai/Kimi-K2-Instruct",
-    task="conversational",
-    huggingfacehub_api_token=os.getenv("HF_TOKEN"),
-    provider="novita",
-    max_new_tokens=1024,
+load_dotenv()
+
+llm = ChatGoogleGenerativeAI(
+    model="gemini-3.8-flash",
+    google_api_key=os.getenv("GEMINI_API_KEY"),
     temperature=0.1,
-    do_sample=False,
+    max_tokens=1024,
 )
-llm = ChatHuggingFace(llm=_endpoint, verbose=False)
 
 # ── State ─────────────────────────────────────────────────
 class AgentState(TypedDict, total=False):
@@ -229,7 +228,7 @@ OUTPUT FORMAT (JSON only, absolutely no other text before or after):
 }}"""
 
     try:
-        print("[REPORT] Invoking Kimi K2 via Novita...")
+        print("[REPORT] Invoking Gemini 3.8 Flash...")
         response = await llm.ainvoke(prompt)
         print(f"[REPORT] Raw: {response.content[:300]}")
 

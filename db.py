@@ -48,35 +48,9 @@ session_local = sessionmaker(
 Base = declarative_base()
 
 async def init_db():
-    """Create all database tables on startup and handle schema migrations"""
+    """Create all database tables on startup"""
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-        
-        # Add missing columns to telemetry_events if they don't exist
-        from sqlalchemy import text
-        try:
-            await conn.execute(text("""
-                ALTER TABLE telemetry_events 
-                ADD COLUMN IF NOT EXISTS ax FLOAT DEFAULT 0.0
-            """))
-        except Exception as e:
-            print(f"Note: Could not add ax column: {e}")
-            
-        try:
-            await conn.execute(text("""
-                ALTER TABLE telemetry_events 
-                ADD COLUMN IF NOT EXISTS ay FLOAT DEFAULT 0.0
-            """))
-        except Exception as e:
-            print(f"Note: Could not add ay column: {e}")
-            
-        try:
-            await conn.execute(text("""
-                ALTER TABLE telemetry_events 
-                ADD COLUMN IF NOT EXISTS az FLOAT DEFAULT 0.0
-            """))
-        except Exception as e:
-            print(f"Note: Could not add az column: {e}")
 
 async def get_db():
   async with session_local() as session:

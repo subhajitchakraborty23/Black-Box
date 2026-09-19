@@ -15,5 +15,3 @@ langgraph
 python-multipart
 python-jose[cryptography]
 twilio
-langchain-huggingface
-huggingface_hub

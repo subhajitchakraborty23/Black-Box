@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text, Float, Boolean
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text, Float, Boolean, UniqueConstraint
 from db import Base
 from datetime import datetime
 from sqlalchemy.orm import relationship
@@ -16,38 +16,63 @@ class User(Base):
     avatar_url = Column(String)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-class TelemetrySession(Base):
-    __tablename__ = "telemetry_sessions"
+class Device(Base):
+    __tablename__ = "devices"
 
-    id = Column(PGUUID(as_uuid=True), primary_key=True,default=uuid.uuid4)
+    id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    api_key_hash = Column(String, unique=True, nullable=False, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    started_at = Column(DateTime, default=datetime.utcnow)
-    ended_at = Column(DateTime, nullable=True)
-    is_active = Column(Boolean, default=True)
+    label = Column(String, nullable=False)
+    last_seen_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
 
-    user = relationship("User", backref="session")
-    events = relationship("TelemetryEvent", backref="session")
-
-class TelemetryEvent(Base):
-    __tablename__ = "telemetry_events"
-
-    id = Column(PGUUID(as_uuid=True), primary_key=True,default=uuid.uuid4)
-    session_id = Column(PGUUID(as_uuid=True), ForeignKey("telemetry_sessions.id"), nullable=False)
-    lat = Column(Float, nullable=False)
-    lon = Column(Float, nullable=False)
-    speed = Column(Float, nullable=False) 
-    accel = Column(Float, nullable=False)
-    ax = Column(Float, default=0.0)         
-    ay = Column(Float, default=0.0)         
-    az = Column(Float, default=0.0)  
-    timestamp = Column(DateTime, nullable=False)
-    crash_flagged = Column(Boolean, default=False)
+    user = relationship("User", backref="devices")
 
 class CrashReport(Base):
     __tablename__ = "crash_reports"
 
     id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    session_id = Column(PGUUID(as_uuid=True), ForeignKey("telemetry_sessions.id"), nullable=False)
-    severity = Column(String, nullable=False)   
-    report = Column(Text, nullable=True)        # JSON string from AI agent
+    device_id = Column(PGUUID(as_uuid=True), ForeignKey("devices.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    status = Column(String, nullable=False, default="pending")
+    triggered_at = Column(DateTime, nullable=False)
+    severity = Column(String, nullable=True)
+    summary = Column(Text, nullable=True)
+    location_lat = Column(Float, nullable=True)
+    location_lon = Column(Float, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    samples = relationship("CrashSample", backref="crash_report")
+
+    __table_args__ = (
+        UniqueConstraint("device_id", "triggered_at", name="uq_device_triggered"),
+    )
+
+class CrashSample(Base):
+    __tablename__ = "crash_samples"
+
+    id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    crash_report_id = Column(PGUUID(as_uuid=True), ForeignKey("crash_reports.id"), nullable=False)
+    t_offset_ms = Column(Integer, nullable=False)
+    lat = Column(Float, nullable=False)
+    lon = Column(Float, nullable=False)
+    speed = Column(Float, nullable=False)
+    ax = Column(Float, nullable=False)
+    ay = Column(Float, nullable=False)
+    az = Column(Float, nullable=False)
+    gx = Column(Float, nullable=True)
+    gy = Column(Float, nullable=True)
+    gz = Column(Float, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class AlertLog(Base):
+    __tablename__ = "alert_logs"
+
+    id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    crash_report_id = Column(PGUUID(as_uuid=True), ForeignKey("crash_reports.id"), nullable=False)
+    channel = Column(String, nullable=False)
+    recipient = Column(String, nullable=False)
+    status = Column(String, nullable=False)
+    sent_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
