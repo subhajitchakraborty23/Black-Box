@@ -101,18 +101,14 @@ def calculate_delta_v(state: AgentState) -> AgentState:
     events = state.get("events", [])
     if len(events) < 2:
         return {**state, "delta_vx": 0.0, "delta_vy": 0.0, "delta_vz": 0.0,
-<<<<<<< Updated upstream
-                "delta_v_total": state.get("delta_v_ms", 0.0),
-=======
-                "delta_v_total": 0.0, "speed_delta_v": 0.0,
->>>>>>> Stashed changes
+"delta_v_total": 0.0, "speed_delta_v": 0.0,
                 "peak_ax": 0.0, "peak_ay": 0.0, "peak_az": 0.0}
 
     crash_idx = state.get("crash_idx", 0)
     speeds = [e["speed"] for e in events]
     speed_delta_v = max(
         0.0,
-        max((speeds[i - 1] - speeds[i]) / 3.6 for i in range(1, len(speeds))),
+        max((speeds[i - 1] - speeds[i]) for i in range(1, len(speeds))),
     )
     window = 10
     crash_events = events[max(0, crash_idx - window):min(len(events), crash_idx + window + 1)]
@@ -133,12 +129,8 @@ def calculate_delta_v(state: AgentState) -> AgentState:
     return {
         **state,
         "delta_vx": round(dvx, 2), "delta_vy": round(dvy, 2), "delta_vz": round(dvz, 2),
-<<<<<<< Updated upstream
-        "delta_v_total": state.get("delta_v_ms", calculated_delta_v_total),
-=======
-        "delta_v_total": round(max(math.sqrt(dvx**2 + dvy**2 + dvz**2), speed_delta_v), 2),
+"delta_v_total": round(max(math.sqrt(dvx**2 + dvy**2 + dvz**2), speed_delta_v), 2),
         "speed_delta_v": round(speed_delta_v, 2),
->>>>>>> Stashed changes
         "peak_ax": round(peak_ax, 2), "peak_ay": round(peak_ay, 2), "peak_az": round(peak_az, 2),
     }
 
