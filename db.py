@@ -29,7 +29,17 @@ if "sslmode" in params and params["sslmode"][0] == "require":
 if "channel_binding" in params:
     connect_args["server_settings"] = {"jit": "off"}
 
-DATABASE_URL = f"{parsed.scheme}://{parsed.netloc}{parsed.path}"
+if parsed.scheme in {"postgres", "postgresql"}:
+    database_scheme = "postgresql+asyncpg"
+elif parsed.scheme == "postgresql+asyncpg":
+    database_scheme = parsed.scheme
+else:
+    raise ValueError(
+        "DATABASE_URL must use a PostgreSQL URL, for example "
+        "postgresql+asyncpg://user:password@host:5432/database"
+    )
+
+DATABASE_URL = f"{database_scheme}://{parsed.netloc}{parsed.path}"
 
 engine = create_async_engine(
     DATABASE_URL,

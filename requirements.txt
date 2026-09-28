@@ -9,9 +9,11 @@ clerk-backend-api
 sqlalchemy
 psycopg2-binary
 asyncpg
-langchain
-langchain-google-genai
 langgraph
 python-multipart
 python-jose[cryptography]
+<<<<<<< Updated upstream
 twilio
+=======
+twilio
+>>>>>>> Stashed changes

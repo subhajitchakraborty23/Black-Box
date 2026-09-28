@@ -180,7 +180,7 @@ Black-Box/
 
 Prerequisites
 - Python 3.10+
-- MongoDB running on `localhost:27017`
+- PostgreSQL database
 - Google Gemini API key ([Get one here](https://aistudio.google.com))
 
  Steps
@@ -209,8 +209,10 @@ pip install -r requirements.txt
 
 **4. Create `.env` file:**
 ```env
-GOOGLE_API_KEY=your_google_api_key_here
-MONGO_URL=mongodb://localhost:27017
+DATABASE_URL=postgresql+asyncpg://user:password@host:5432/database
+GEMINI_API_KEY=your_google_api_key_here
+CLERK_JWKS_URL=https://your-clerk-domain/.well-known/jwks.json
+CLERK_WEBHOOK_SECRET=whsec_your_webhook_secret
 ```
 
 **5. Run the server:**

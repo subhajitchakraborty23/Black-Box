@@ -5,10 +5,7 @@ from datetime import datetime
 
 load_dotenv()
 
-# genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
-# model = genai.GenerativeModel("gemini-2.5-flash")
-
-client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
+client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 def get_blackbox_data():
     return [
@@ -305,8 +302,8 @@ def reconstruct_accident():
     print("\n🤖 Sending data to AI for reconstruction...")
     print("─" * 60)
     response = client.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=[{"role": "user", "input": prompt}]
+        model="gemini-3.8-flash",
+        contents=prompt,
     )
 
     # Step 6 - Print Report
